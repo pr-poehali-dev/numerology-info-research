@@ -2,13 +2,35 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import SacredGeometry from '@/components/SacredGeometry';
 
+const SEND_URL = 'https://functions.poehali.dev/b774ad04-901f-436e-8d7d-12264631ed29';
+
 const ContactsPage = () => {
   const [form, setForm] = useState({ name: '', email: '', topic: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(SEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSent(true);
+      } else {
+        setError(data.error || 'Что-то пошло не так. Попробуйте ещё раз.');
+      }
+    } catch {
+      setError('Не удалось отправить сообщение. Проверьте интернет-соединение.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +80,7 @@ const ContactsPage = () => {
             <div className="mystical-card rounded-2xl p-6">
               <h3 className="font-cormorant text-xl font-semibold text-foreground mb-4">Консультации</h3>
               <p className="font-golos text-sm text-foreground/55 leading-relaxed mb-4">
-                Личная консультация по нумерологии — 60 минут. 
+                Личная консультация по нумерологии — 60 минут.
                 Включает полный нумерологический портрет и прогноз на год.
               </p>
               <div className="p-4 rounded-lg mb-4" style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.15)' }}>
@@ -92,9 +114,10 @@ const ContactsPage = () => {
                         />
                       </div>
                       <div>
-                        <label className="font-golos text-xs text-gold/55 tracking-[0.2em] uppercase block mb-2">Email</label>
+                        <label className="font-golos text-xs text-gold/55 tracking-[0.2em] uppercase block mb-2">Email *</label>
                         <input
                           type="email"
+                          required
                           value={form.email}
                           onChange={e => setForm({ ...form, email: e.target.value })}
                           placeholder="your@email.com"
@@ -122,8 +145,9 @@ const ContactsPage = () => {
                     </div>
 
                     <div>
-                      <label className="font-golos text-xs text-gold/55 tracking-[0.2em] uppercase block mb-2">Сообщение</label>
+                      <label className="font-golos text-xs text-gold/55 tracking-[0.2em] uppercase block mb-2">Сообщение *</label>
                       <textarea
+                        required
                         value={form.message}
                         onChange={e => setForm({ ...form, message: e.target.value })}
                         placeholder="Расскажите о своём запросе..."
@@ -133,12 +157,28 @@ const ContactsPage = () => {
                       />
                     </div>
 
+                    {error && (
+                      <div className="p-3 rounded-lg font-golos text-sm text-red-300 flex items-center gap-2"
+                        style={{ background: 'rgba(200,80,80,0.1)', border: '1px solid rgba(200,80,80,0.2)' }}>
+                        <Icon name="AlertCircle" size={15} className="shrink-0" />
+                        {error}
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full py-4 rounded-lg font-golos text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:scale-[1.01]"
+                      disabled={loading}
+                      className="w-full py-4 rounded-lg font-golos text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
                       style={{ background: 'linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%)', color: '#080C1A' }}
                     >
-                      Отправить сообщение
+                      {loading ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Отправляем...
+                        </>
+                      ) : (
+                        'Отправить сообщение'
+                      )}
                     </button>
                   </form>
                 </>
